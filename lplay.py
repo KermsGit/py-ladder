@@ -124,19 +124,16 @@ def ldscreen(stdscr):
     stdscr.move(LINES - 1, 0)
     refresh()
 
+def reldscreen():
 
-static void reldscreen(void)
-{
-    int row,i;
+    for row in range(DIMROW) 
+        stdscr.addstr(row,0,bg[row])
 
-    for( row = 0; row < DIMROW; row++ ) 
-        mvaddstr(row,0,bg[row]);
-
-    /* deal with lad */
-    lad.row = lad.st_row;
-    lad.col = lad.st_col;
-    lad.dir = NONE;
-    lad.jst = 0;
+    #/* deal with lad */
+    lad.row = lad.st_row
+    lad.col = lad.st_col
+    lad.dir = None
+    lad.jst = 0
     mvaddch(lad.row,lad.col,CLAD);
 
     /* deal with ders */
