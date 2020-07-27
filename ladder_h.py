@@ -23,7 +23,7 @@ scrno = 0
 def unmerge(s):
     t = ''
     for c in s: 
-        if( ord(c) & 0200 ):
+        if( ord(c) & 0o200 ):
            t = t +(210-ord(c))*' '
         else:
             t = t + c

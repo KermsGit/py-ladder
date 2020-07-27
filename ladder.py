@@ -11,13 +11,51 @@ import time
 
 from ltime import *
 from lscreens import *
-from ladder_h import *
 
-speed       = 0
-diff        = 0
-last        = 0
+# Defines
+DIMROW      = 20
+DIMCOL      = 80
+DIMSCRN     = 7
+HISPEED     = 5
+
+CLAD        = 'g'
+CDER        = 'o'
+CGOLD       = '&'
+CRELEAS     = 'V'
+CLADDER     = 'H'
+CTARGET     = '$'
+CEXIT       = '*'
+CBAR        = '|'
+CGROUND     = '='
+CHAZARD     = '.'
+CTRAP0      = '^'
+CTRAP1      = '-'
+CFREE       = ' '
+
+scrno = 0
+speed = 0
+diff = 0
+last = 0
+lads = 0
+score = 0
+level = 0
+
+boni = [0 for i in range(DIMSCRN)]
 
 gstdscr     = False
+
+def unmerge(s):
+    t = ''
+    for c in s: 
+        if( ord(c) & 0o200 ):
+           t = t +(210-ord(c))*' '
+        else:
+            t = t + c
+    return t
+
+def memcpy(dst, src):
+    for i in range(len(src)):
+        dst[i] = src[i] 
 
 def mexit0():
     global gstdscr
@@ -85,7 +123,7 @@ def getcmd(stdscr, row, col):
         stdscr.addstr(row,col,"Enter one of the above: ")
         stdscr.refresh()
         if msvcrt.kbhit():
-            mykey = getch()
+            mykey = chr(stdscr.getch())
             break
         time.sleep(0.2)
         count += 1
@@ -142,6 +180,32 @@ def menu(stdscr):
     r += 1
     stdscr.refresh()
     return getcmd(stdscr, r, LM)
+    
+def play(stdscr):
+    global lads
+    global score
+    global scrno
+    
+    hi_scrno = 0
+    memcpy(boni,st_boni)
+    lads = 5
+    score = 0
+    scrno = 0
+    hi_scrno = 1
+    
+    stdscr.clear()
+    while True:
+        level = 1
+        if lplay(stdscr) == DEAD:
+            break
+        boni[scrno] -= 2
+        scrno = scrno+1
+        if scrno > hi_scrno:
+            if hi_scrno != (DIMSCRN - 1):
+                hi_scrno = hi_scrno +1
+            scrno = 0
+        level = level + 1
+    upd_score()
 
 def main(stdscr):
     global gstdscr
@@ -171,8 +235,8 @@ def main(stdscr):
     while( True ):
         c =  str(menu(stdscr)).upper()
         if (c == 'P'):
-            play()
-            clear()
+            play(stdscr)
+            stdscr.clear()
 
         elif (c == 'I'):
             instructions(stdscr)

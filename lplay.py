@@ -2,7 +2,7 @@ import enum
 
 from ladder_h import *
 
-typedef enum { NONE, STOP = 0, XUP = 1, XDOWN = 2, LEFT = 3, RIGHT = 4 } DIR
+#typedef enum { NONE, STOP = 0, XUP = 1, XDOWN = 2, LEFT = 3, RIGHT = 4 } DIR
 
 class DIR(enum.Enum):
     NONE  = -1
@@ -57,8 +57,9 @@ def stat_bonus(stdscr):
 
 def add_score(add):
     if( score / 100 < (score + add) / 100 ):
-        lads++, stat_lads()
-    score += add
+        lads = lads +1
+        stat_lads()
+    score = score + add
     stat_score()
 
 def ldscreen(stdscr):
@@ -82,7 +83,7 @@ def ldscreen(stdscr):
         for c in [pos for pos, char in enumerate(t) if char == CRELEAS]:
             releases[i].row = Row
             releases[i].col = c
-            i += 1
+            i = i + 1
             
     #/* mark the rest of releases */
     #for( ; rel < &releases[DIM(releases)]; rel++ )
@@ -94,7 +95,7 @@ def ldscreen(stdscr):
         s = bg[row]
         for c in [pos for pos, char in enumerate(s) if char == CLAD]:
             #/* nasty, check for CLAD's surrounded by CFREEs */
-            if( s[c-1] != CFREE || s[c+1] != CFREE ):
+            if( s[c-1] != CFREE or s[c+1] != CFREE ):
                 continue
             lad.row = lad.st_row = row
             lad.col = lad.st_col = c
@@ -109,12 +110,12 @@ def ldscreen(stdscr):
         for i in range(DIMSCRN):
             if hi < hiders[i]:
                 hi = hiders[i]
-        ders = [DER() for i in range(hi +))]
+        ders = [DER() for i in range(hi+1)]
         ders[hi].row = EOF
 
     for i in  range(hiders[scrno]):
         ders[i].launch = i + 1
-        ders[i].dir = XDOWN
+        ders[i].dir = DIR.XDOWN
 
     for d in ders:
         if d.row == EOF:
@@ -126,7 +127,7 @@ def ldscreen(stdscr):
 
 def reldscreen():
 
-    for row in range(DIMROW) 
+    for row in range(DIMROW):
         stdscr.addstr(row,0,bg[row])
 
     #/* deal with lad */
@@ -136,89 +137,78 @@ def reldscreen():
     lad.jst = 0
     mvaddch(lad.row,lad.col,CLAD);
 
-    /* deal with ders */
-    for( i = 0; i < hiders[scrno]; i++ )
-    {
+    #deal with ders
+    for i in range(hiders[scrno]):
         ders[i].launch = i + 1;
         ders[i].dir = XDOWN;
-    }
 
     move(LINES - 1, 0);
     refresh();
-}
 
-#define SOLID(C)    ((C) == CBAR || (C) == CGROUND || (C) == CTRAP1)
+def SOLID(C):
+    return ((C) == CBAR or (C) == CGROUND or (C) == CTRAP1)
 
-/* drive a single der, tell whether it left the board or hit lad */
-static RESULT drv_der(DER *dp)
-{
-#define LorR    dchoice[rand() % 2]
-#define LorRorD dchoice[rand() % 3] 
+dchoice = [DIR.LEFT,DIR.RIGHT,DIR.XDOWN];
 
-    static DIR dchoice[] = {LEFT,RIGHT,XDOWN};
-    int row = dp->row,
-        col = dp->col;
-    DIR dir = dp->dir;
-    char c;
+def LorR():
+    return (dchoice[rand() % 2])
+    
+def LorRorD():
+    return (dchoice[rand() % 3])
+    
+# drive a single der, tell whether it left the board or hit lad
+def drv_der(dp):
+    row = dp.row
+    col  = dp.col
+    dir   = dp.dir
+    c = ""
 
-    c = bg[row][col];       /* restore prev content */
+    c = bg[row][col]       #/* restore prev content */
     mvaddch(row,col,c);
-    if( c == CEXIT )
-        return EXIT;
-    for( ;; )
-    {
-        if( dir == XDOWN )
-        {
-            c = bg[row + 1][col];
-            if( SOLID(c) )
-            {
-                dir = LorR;
-                continue;
-            }
-            row++;
-            break;
-        }
-        if( dir == LEFT )
-        {
-            if( col == 0 || bg[row][col - 1] == CBAR )
-            {
-                dir = RIGHT;
-                continue;
-            }
-            col--;
-        }
-        if( dir == RIGHT )
-        {
-            if( col == DIMCOL - 2 || bg[row][col + 1] == CBAR )
-            {
-                dir = LEFT;
-                continue;
-            }
-            col++;
-        }
-        if( bg[row][col] == CLADDER )
-            dir = LorRorD;
-        else
-        {
-            c = bg[row + 1][col];
-            if( !SOLID(c) )
-                dir = XDOWN;
-        }
+    if c == CEXIT:
+        return EXIT
+        
+    while(True):
+        if dir == DIR.XDOWN:
+            c = bg[row + 1][col]
+            if SOLID(c):
+                dir = LorR()
+                continue
+            row = row + 1
+            break
+            
+        if dir == DIR.LEFT:
+            if( col == 0 or bg[row][col - 1] == CBAR ):
+                dir = DIR.RIGHT
+                continue
+            col = col - 1
+            
+        if dir == DIR.RIGHT:
+            if( col == DIMCOL - 2  or bg[row][col + 1] == CBAR ):
+                dir = DIR.LEFT
+                continue
+            col = col + 1
+            
+        if bg[row][col] == CLADDER:
+            dir = LorRorD();
+        else:
+            c = bg[row + 1][col]
+            if  not SOLID(c) :
+                dir = DIR.XDOWN;
         break;
-    }
-    c = mvinch(row,col);
-    addch(CDER);
-    dp->row = row;
-    dp->col = col;
-    dp->dir = dir;
-    return strchr(laddirs,c) ? DEAD : NORMAL;
 
-#undef  LorR
-#undef  LorRorD
-}
+    c = mvinch(row,col)
+    addch(CDER)
+    dp.row = row
+    dp.col = col
+    dp.dir = dir
+    
+    if c in laddirs:
+        return NORMAL
+    else:
+        return DEAD
 
-static RESULT drv_ders(void)
-{
+def drv_ders():
     DER *derp;
     for( derp = ders; derp->row != EOF; derp++ )
     {
