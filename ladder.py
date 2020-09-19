@@ -232,6 +232,11 @@ def unmerge(s):
         else:
             t = t + c
     return t
+    
+def setchar(s,  index,  c):
+    print(s)
+    s = s[:index] + c + s[index+1:]
+    print(s)
 
 class Game(object):
     def __init__(self, stdscr):
@@ -242,9 +247,10 @@ class Game(object):
         self.diff = 0
         self.last = 0
         self.lads = 0
-        self. score = 0
-        self. level = 0
+        self.score = 0
+        self.level = 0
         self.lad = LAD()
+        self.ders = None
 
     def mexit0(self):
         self.stdscr.refresh()
@@ -257,8 +263,9 @@ class Game(object):
         self.stdscr.move(23,0)
         self.mexit0()
 
-    def  getch(self):
-        return msvcrt.getch()
+#    def  getch(self):
+#        return self.stdscr.getch()
+#        #return msvcrt.getch()
 
     def instructions(self):
         text = [
@@ -379,12 +386,12 @@ class Game(object):
             level = 0
             if self.lplay() == DEAD:
                 break
-            boni[scrno] -= 2
-            scrno = scrno+1
-            if scrno > hi_scrno:
+            boni[self.scrno] -= 2
+            self.scrno += 1
+            if self.scrno > hi_scrno:
                 if hi_scrno != (DIMSCRN - 1):
                     hi_scrno += 1
-                scrno = 0
+                self.scrno = 0
             level += 1
         upd_score()
 
@@ -460,19 +467,19 @@ class Game(object):
         i = 0
         self.rel = [RELEASE() for j in range(3)]
 
-        self.bg = [ ' ' * ROWCOL for j in range(DIMROW) ]
+        self.bg = [' ' * DIMCOL for j in range(DIMROW) ]
 
         for row in range(DIMROW): 
-            s = screens[scrno][row]
-            t = bg[row];
+            s = screens[self.scrno][row]
+            t = self.bg[row];
 
-            bg[row] = unmerge(s)
+            self.bg[row] = unmerge(s)
             t = unmerge(s)
-            stdscr.addstr(row,0,t)
+            self.stdscr.addstr(row,0,t)
 
             #/* find points of release */
             for c in [pos for pos, char in enumerate(t) if char == CRELEAS]:
-                self.rel[i].row = Row
+                self.rel[i].row = row
                 self.rel[i].col = c
                 i += 1
                 
@@ -481,7 +488,7 @@ class Game(object):
         #    rel->row = rel->col = EOF;
 
         #/* find lad */
-        for row in rage(DIMROW): 
+        for row in range(DIMROW): 
             #for( s = t = bg[row]; s = strchr(s,CLAD); s++ )
             s = self.bg[row]
             for c in [pos for pos, char in enumerate(s) if char == CLAD]:
@@ -490,9 +497,9 @@ class Game(object):
                     continue
                 self.lad.row = self.lad.st_row = row
                 self.lad.col = self.lad.st_col = c
-                self.lad.dir = NONE
+                self.lad.dir = None
                 self.lad.jst = 0
-                self.bg[lad.row][lad.col] = CFREE
+                self.set_bg(self.lad.row,  self.lad.col, CFREE)
                 break
 
         #/* init ders */
@@ -504,19 +511,20 @@ class Game(object):
             self.ders = [DER() for i in range(hi+1)]
             self.ders[hi].row = EOF
 
-        for i in  range(hiders[scrno]):
+        for i in  range(hiders[self.scrno]):
             self.ders[i].launch = i + 1
             self.ders[i].dir = DIR.XDOWN
 
         while self.ders[i].row != EOF:
-            self.ders.launch = -1
+            self.ders[i].launch = -1
+            i += 1
 
-        self.stdscr.move(LINES - 1, 0)
+        self.stdscr.move(curses.LINES - 1, 0)
         self.stdscr.refresh()
 
     def reldscreen(self):
         for row in range(DIMROW):
-            self.stdscr.addstr(row,0,bg[row])
+            self.stdscr.addstr(row,0,self.bg[row])
 
         #/* deal with lad */
         self.lad.row = self.lad.st_row
@@ -526,11 +534,11 @@ class Game(object):
         self.stdscr.mvaddch(self.lad.row,self.lad.col,CLAD);
 
         #deal with ders
-        for i in range(hiders[scrno]):
+        for i in range(hiders[self.scrno]):
             self.ders[i].launch = i + 1
             self.ders[i].dir = XDOWN
 
-        self.stdscr.move(LINES - 1, 0)
+        self.stdscr.move(curses.LINES - 1, 0)
         self.stdscr.refresh()
         
     # drive a single der, tell whether it left the board or hit lad
@@ -540,14 +548,14 @@ class Game(object):
         dir   = dp.dir
         c = ""
 
-        c = bg[row][col]       #/* restore prev content */
+        c = self.bg[row][col]       #/* restore prev content */
         self.stdscr.mvaddch(row,col,c);
         if c == CEXIT:
             return EXIT
             
         while(True):
             if dir == DIR.XDOWN:
-                c = bg[row + 1][col]
+                c = self.bg[row + 1][col]
                 if SOLID(c):
                     dir = LorR()
                     continue
@@ -555,27 +563,27 @@ class Game(object):
                 break
                 
             if dir == DIR.LEFT:
-                if( col == 0 or bg[row][col - 1] == CBAR ):
+                if( col == 0 or selfbg[row][col - 1] == CBAR ):
                     dir = DIR.RIGHT
                     continue
                 col = col - 1
                 
             if dir == DIR.RIGHT:
-                if( col == DIMCOL - 2  or bg[row][col + 1] == CBAR ):
+                if( col == DIMCOL - 2  or self.bg[row][col + 1] == CBAR ):
                     dir = DIR.LEFT
                     continue
                 col = col + 1
                 
-            if bg[row][col] == CLADDER:
+            if self.bg[row][col] == CLADDER:
                 dir = LorRorD();
             else:
-                c = bg[row + 1][col]
+                c = self.bg[row + 1][col]
                 if  not SOLID(c) :
                     dir = DIR.XDOWN;
             break;
 
         c = self.stdscr.mvinch(row,col)
-        self.stdscr. addch(CDER)
+        self.stdscr.addch(CDER)
         dp.row = row
         dp.col = col
         dp.dir = dir
@@ -584,6 +592,292 @@ class Game(object):
             return NORMAL
         else:
             return DEAD
+
+    def drv_ders(self):
+        for derp in self.ders:
+        #for( derp = ders; derp->row != EOF; derp++ )
+            if derp.launch == -1:
+                continue;
+            if derp.launch == 0:
+                result = drv_der(derp)
+                if result == DEAD:
+                    return DEAD
+                if result == EXIT:
+                    derp.launch = 5       #/* set new start time */
+                continue
+
+            derp.launch = derp.launch -1
+            if derp.launch == 0:
+                #/* select a point of release */
+                while( True ):
+                    n = random.randintint() % len(releases)
+                    if releases[n].row != EOF:
+                        derp.row = releases[n].row
+                        derp.col = releases[n].col
+                        derp.dir = XDOWN
+                        break
+        return NOTHING_HAPPENED
+
+    def lad_died(self):
+        rot = "b+d+q+p+";
+        ctnplay();
+        for i  in range(5):
+            for j in len(rot):
+                self.stdscr.mvaddch(lad.row,lad.col,rot[j]);
+                self.stdscr.move(curses.LINES - 1,0);
+                self.stdscr.refresh();
+                waitct();
+
+    def do_the_hooka(self):
+        self.bonus -= 1
+        while sef.bonus >= 0:
+            self.add_score(1)
+            self.stat_bonus()
+            self.stdscr.move(DIMROW + 2,0)
+            if self.bonus & 1 :
+                self.stdscr.addstr("Hooka!");
+            else:
+                self.stdscr.clrtoeol()
+            self.stdscr.move(curses.LINES - 1,0)
+            self.stdscr.refresh()
+            waitct()
+            self.bonus -= 1
+
+    def pause(self):
+        self.stdscr.mvaddstr(DIMROW + 2,0,"Type RETURN to continue: ")
+        self.stdscr.refresh()
+        self.stdscr.nodelay(FALSE)
+        while self.stdscr.getch() != '\n':
+            pass
+        self.stdscr.nodelay(TRUE)
+        self.stdscr.move(DIMROW + 2,0)
+        self.stdscr.clrtoeol()
+
+    def over_der(self,  row, col):
+        #/* Funny how lad jumps over "Sc`o're" - avoid it? Na. */
+        if self.stdscr.mvinch(row + 1,col) == CDER or self.stdscr.mvinch(row + 2,col) == CDER:
+            self.add_score(2)
+
+    def drv_lad(self):
+        row = self.lad.row
+        col =  self.lad.col
+        dir =  self.lad.dir
+        jst =  self.lad.jst
+        c0 = ''
+        c1 = ''
+
+        while (True):
+            ch = self.stdscr.getch()
+            if ch == ERR:   #/* no key */
+                break
+
+            if ch == 'h' or ch == '4' or ch == KEY_LEFT:
+                dir = LEFT
+                break
+
+            if ch == 'l' or ch == '6' or ch == KEY_RIGHT:
+                dir = RIGHT
+                break
+            
+            if ch == 'k' or ch == '8' or ch == KEY_UP:
+                if  not jst:
+                    dir = XUP
+                break;
+
+            if ch == 'j' or ch == '2' or ch == KEY_DOWN:
+                if not jst:
+                    dir = XDOWN
+                break
+
+            if ch ==' ':
+                if not jst:      #/* not while we're jumping */
+                    jst = 1
+                break
+
+            if ch == chr(ord('R')-ord('@')) or ch == chr(ord('L')-ord('@'))  or ch == KEY_CLEAR:
+                self.stdscr.wrefresh()
+                break
+            
+            if ch ==  chr(ord('[')-ord('@')):
+                return PAUSE;
+
+            if ch == chr(ord('C')-ord('@')):       #/* who does set INTR to ^C, anyway? */
+                while(self.lads >= 1):
+                    self.stat_lads()
+                    self.stdscr.move(curses.LINES - 1, 0)
+                    self.stdscr.refresh()
+                    self.stdscr.waitct()
+                    self.lads -= 1
+                self.lads = 1
+                return DEAD
+
+            dir = STOP
+
+        c0 = self.bg[row][col]
+        c1 = self.bg[row + 1][col]
+        if jst < 2 and not SOLID(c1) and c0 != CLADDER and not (jst == 1 and c0 == CHAZARD):
+            #/* then fall */
+            jst = 0        #/* no request for jumping */
+            row = row + 1
+        else:
+            if jst >= 1:   #/* request for or within a jump */
+                if jst == 1 and c1 == CFREE and c0 != CHAZARD:
+                    jst = 0
+                else:
+                    jra[7] = [ 0, -1, -1, 0, 0, 1, 1 ]
+                    jc = 0
+                    jr = 0
+
+                    self.over_der(row,col)
+                    if dir == XUP or dir == XDOWN:
+                        dir = STOP
+                    while(jst != 7):
+                        jr = jra[jst]
+                        if dir == STOP:
+                            jc = 0
+                        elif dir == LEFT:
+                            jc = -1
+                        else:
+                            jc = 1
+                            
+                        c0 = self.bg[row + jr][col + jc]
+                        if c0 != CBAR and c0 != CGROUND and not (jr == 1 and c0 == CTRAP1):
+                            row = row + jr
+                            if row < 0 or row > (DIMROW - 2):
+                                row = row - jr
+                            col = col + jc
+                            if col < 0 or col > (DIMCOL - 2):
+                                col = col - jc
+                            break
+                        jst = jst +1
+                    
+                    jst = jst + 1
+                    if jst >= 7:
+                        jst = 0
+                    if self.bg[row][col] == CLADDER:
+                        jst = 0
+                        dir = STOP
+                    if dir != STOP:
+                        self.over_der(row,col)
+            else:
+                if c1  == CTRAP1:
+                    self.bg[row + 1][col] = CFREE
+                    self.stdscr.mvaddch(row + 1,col, CFREE)
+                    
+                if dir == LEFT:
+                    c1 = self.bg[row][col - 1]
+                    if col != 0 and c1 != CBAR and c1 != CGROUND:
+                        col = col - 1
+                    else:
+                        dir = STOP
+                    #break
+                
+                if dir == RIGHT:
+                    c1 = self.bg[row][col + 1]
+                    if col != (DIMCOL - 2) and c1 != CBAR and c1 != CGROUND:
+                        col = col +1
+                    else:
+                        dir = STOP
+                    #break
+                    
+                if dir == XUP:
+                    if c0 == CLADDER:
+                        c0 = self.bg[row - 1][col]
+                        if c0== CLADDER or c0 == CTARGET:
+                            row = row - 1;
+                    else:
+                        dir = STOP
+                    #break
+                    
+                if dir == XDOWN:
+                    if c0 == CLADDER and c1 != CGROUND:
+                        row = row + 1
+                    else:
+                        dir = STOP;
+                    #break
+
+        if self.lad.row != row or self.lad.col != col or self.lad.dir != dir or self.lad.jst != jst:
+            mvaddch(lad.row,lad.col,self.bg[lad.row][lad.col])
+            #/* remove rubbish */
+            s = CGOLD+CRELEAS+CLADDER+CTARGET+CEXIT+CBAR+CGROUND+CHAZARD+CTRAP0+CTRAP1+CFREE
+            if not self.bg[row][col] in s:
+                self.bg[row][col] = CFREE
+                self.stdscr.mvaddch(row,col,CFREE)
+            #/* check for anything that matters */
+            if self.self.bg[row][col] == CGOLD:
+                self.bg[row][col] = CFREE
+                self.stdscr.mvaddch(row,col,CFREE)
+                self.add_score(bonus)
+            if self.bg[row][col] == CHAZARD:
+                dir = random.randint()
+                if dir & 1:
+                    dir = LEFT
+                else:
+                    dir = RIGHT
+                jst = random.randint() & 1
+            self.lad.row = row
+            self.lad.col = col
+            self.lad.dir = dir
+            self.lad.jst = jst
+            if self.stdscr.mvinch(row,col) == CDER:
+                return DEAD
+            self.stdscr.addch(laddirs[dir])
+            
+        if self.bg[row][col] == CTARGET:
+            return FINISH
+        if self.bg[row][col] == CTRAP0:
+                return DEAD
+        return NORMAL
+
+    def lplay(self):
+
+        self.ldscreen();
+
+        while( self.lads > 0 ):
+            bonus = self.boni[self.scrno]
+            ctplay()
+            stat_lads()
+            stat_level()
+            stat_score()
+            stat_bonus();
+            self.stdscr.mvaddstr(DIMROW + 2,0,"Get ready! ")
+            self.stdscr.refresh()
+            for tick in range(7,  -1,  0):
+                self.stdscr.waitct()
+            self.stdscr.move(DIMROW + 2,0);
+            self.stdscr.clrtoeol();
+        
+            for tick in range(20 * bonus, -1,  0 ):
+                if not ((tick - 1) % 20):
+                    bonus = bonus -1
+                    stat_bonus()
+                result = selg.drv_ders()
+                if  result != DEAD:
+                    result = sef.drv_lad()
+                self.stdscr.move(curses.LINES - 1,0);
+                self.stdscr.refresh()
+                self.stdscr.waitct()
+                if result == PAUSE:
+                    self.pause()
+                    result = NORMAL
+                if result != NORMAL:
+                    break;
+        
+            if not tick:
+                result = DEAD
+            if result == DEAD:
+                self.lads -= 1
+                self.stat_lads()
+                selg.lad_died()
+                
+            if result == FINISH:
+                self.do_the_hooka();
+                return NORMAL
+            selg.reldscreen()
+        return DEAD
+        
+    def set_bg(self,  row, col,   c):
+        self.bg[row] = self.bg[row][:col] + c + self.bg[row][col+1:]
         
 def main(stdscr):
     game = Game(stdscr) 
